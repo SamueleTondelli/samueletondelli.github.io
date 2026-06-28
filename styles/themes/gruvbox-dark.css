@@ -1,0 +1,13 @@
+:root {
+    color-scheme: dark;
+    --background: #282828;
+    --text: #ddc7a1;
+    --muted: #a89984;
+    --line: #5a524c;
+    --line-soft: #45403d;
+    --accent: #89b482;
+    --accent-hover: #a9b665;
+    --heading-accent: #d8a657;
+    --selection-background: #45403d;
+    --selection-text: #ddc7a1;
+}
