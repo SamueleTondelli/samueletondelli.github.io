@@ -14,9 +14,7 @@
             <div class="prose">
                 <h1 class="title title--page" id="page-title">Samuele Tondelli</h1>
                 <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-                    vitae ligula sed neque laoreet facilisis. Donec at augue ut mi
-                    sagittis fermentum, a posuere sem.
+                    I'm a final-year Master's student in Computer Science and Engineering at Politecnico di Milano, with a focus on performance engineering for deep learning and systems programming. My work spans from designing a custom <a href="https://github.com/leonardobertolani/deepspaceexploration">hardware accelerator for autonomous deep-space satellites</a> to my current thesis, where I'm optimizing GPU inference of a graph transformer for protein docking. I'm actively looking for internships and research opportunities, feel free to reach out!
                 </p>
 
                 <nav class="link-list" aria-label="Contact links">
@@ -33,24 +31,17 @@
             <h2 class="title title--section" id="articles-title">Articles</h2>
             <ol class="content-list">
                 <li class="content-item">
-                    <a class="content-title" href="articles/first-placeholder.html">First Placeholder Article</a>
+                    <a class="content-title" href="articles/second-placeholder.html">Reducing by 6x the forward pass latency of a PyTorch model without touching device code</a>
                     <time class="content-date" datetime="2026-06-28">June 28, 2026</time>
                     <p class="content-description">
-                        A short placeholder article about notes, ideas, and future writing.
+                        PyTorch is nice as it already provides you pretty good kernels, however host side code is just as important and ignoring it could lead to large performance degradation.
                     </p>
                 </li>
                 <li class="content-item">
-                    <a class="content-title" href="articles/second-placeholder.html">Second Placeholder Article</a>
+                    <a class="content-title" href="articles/first-placeholder.html">Gradino: optimizing a CPU only autograd engine with AVX512 and custom memory allocators</a>
                     <time class="content-date" datetime="2026-06-28">June 28, 2026</time>
                     <p class="content-description">
-                        A short placeholder article about notes, ideas, and future writing.
-                    </p>
-                </li>
-                <li class="content-item">
-                    <a class="content-title" href="articles/third-placeholder.html">Third Placeholder Article</a>
-                    <time class="content-date" datetime="2026-06-28">June 28, 2026</time>
-                    <p class="content-description">
-                        A short placeholder article about notes, ideas, and future writing.
+                        In the past months I have built an autograd engine in C from scratch, optimizing the performance by using SIMD and reducing memory allocations overhead via arena allocators.
                     </p>
                 </li>
             </ol>
