@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradino: optimizing a CPU-only autograd engine with AVX-512 and custom memory allocators</title>
+    <link rel="stylesheet" href="../styles/base.css">
+    <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js" defer></script>
+    <script src="../scripts/code-highlight.js" defer></script>
+</head>
+<body>
+    <main class="page page--article">
+        <nav class="article-nav" aria-label="Site navigation">
+            <a href="../index.html">Home</a>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1 class="title title--article">Gradino: optimizing a CPU-only autograd engine with AVX-512 and custom memory allocators</h1>
+                <time class="article-date" datetime="2026-06-28">July 12, 2026</time>
+            </header>
+
+            <div class="article-body">
+                <p>
+                    In the past year I have been learning about the infrastructure behind deep learning, as the scale of these systems piqued my curiosity.
+                    In doing so, I stumbled upon the famous <a href="https://github.com/karpathy/micrograd">micrograd</a>, a tiny autograd engine written in Python.
+                    Its simplicity honestly surprised me and inspired me to make my own autograd engine in C with a focus on performance, leading me to develop <a href="https://github.com/SamueleTondelli/gradino">gradino</a>. 
+                </p>
+
+                <h2>Gradino overview</h2>
+                <p>
+                    An autograd engine's job is to, given a computational graph and a starting node, compute the gradient of the starting node with respect to each preceding node. To do so, it
+                    has to keep track of a DAG where the nodes are the values used in the computation and the edges are the operations between the values, then to compute the backward
+                    pass we can walk the graph backwards and at each node compute the backward op that generated the given node, accumulating the gradients. How computationally
+                    expensive these operations can be depends a lot on how many and what type they are, so my first design choice was to make the engine
+                    tensor-based, instead of scalar-based like micrograd. This lets us represent operations such as matmuls, vecadds and activation functions as single ops, making optimization much
+                    easier and the graph much simpler. In particular:
+                </p>
+
+                <ul>
+                    <li><a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/include/tensor.h#L9">Tensors</a> are fixed to having 4 dimensions, this
+                    reduces the amount of dynamic allocations by a lot and covers every case up to batches of images (batches of videos are out of scope)</li>
+                    <li>The <a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/include/grad.h#L9">nodes</a> are containers of multiple tensors (the value, the gradient, the previous step's gradient and the Adam moment estimates)
+                    and a reference to the operation that generated that node</li>
+                    <li>The <a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/include/ops.h#L35">edges</a> contain the function pointers to the forward and backward operation and the nodes' references,
+                    for example <a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/src/ops.c#L135">here's the matmul definition</a></li>
+                </ul>
+
+                <p>
+                    By defining the operations at the tensor level, it makes them more computationally intensive but also much easier to parallelize using SIMD, i.e. particular
+                    CPU instructions which perform computation on multiple values at the same time, which is the first thing that I tackled using AVX-512 instructions. However there's
+                    also a big hidden performance hindrance: dynamic memory allocations. There are a lot of them. Let's consider for example a simple linear layer + ReLU, which is represented
+                    by 3 nodes computed with a matmul, vecadd and ReLU which need to be dynamically allocated, however each node contains 5 tensors, which means that we need 15 mallocs at each
+                    forward pass! Malloc is incredibly slow (had to actually learn how it works inside for <a href="https://github.com/SamueleTondelli/ctf-challs/tree/main/heap">CTFs</a>)
+                    and it doesn't make sense to fully optimize the kernels if you're gonna spend most of the time allocating on the heap, however in our case allocations can be
+                    easily grouped up by lifetime, which makes the application suitable for arena allocators.
+                </p>
+                
+                <h2>AVX-512</h2>
+                <p>
+                    AVX-512 is a 512-bit-wide SIMD instruction set architecture extension supported by some x86-64 processors. While compilers can optimize code automatically
+                    using this kind of instruction, sometimes they don't as they can have a hard time figuring out exactly what the code is meant to do, which means that
+                    we have to use them explicitly via the <a href="https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#">Intel intrinsics</a>. I found their
+                    naming convention pretty convoluted and "obscure", but besides that they are not that hard to use: you have types to represent 512-bit vectors, functions to
+                    load/store them and perform element-wise operations between them.<br>
+                    Let's take for example the <a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/src/cpu_kernels.c#L446">add_scaled</a> kernel,
+                    which given two tensors <code>a</code> and <code>b</code> and a scalar <code>alpha</code>, performs <code>a + alpha * b</code>.
+                </p>
+                <pre><code class="language-c">void _tensor_kernel_add_scaled(const Tensor* a, const Tensor* b, f32 alpha, Tensor* result) {
+    __m512 alpha_v = _mm512_set1_ps(alpha);
+    usize i = 0;
+    usize nvecs = a-&gt;data_len / 16;
+    // vectorized loop
+    for (usize iv = 0; iv &lt; nvecs; iv++) {
+        __m512 bv = _mm512_loadu_ps(&amp;b-&gt;data[i]);
+        bv = _mm512_mul_ps(bv, alpha_v);
+        __m512 av = _mm512_loadu_ps(&amp;a-&gt;data[i]);
+        __m512 res_v = _mm512_add_ps(av, bv);
+        _mm512_storeu_ps(&amp;result-&gt;data[i], res_v);
+        i += 16;
+    }
+    // remainder
+    for (; i &lt; a-&gt;data_len; i++) {
+        result-&gt;data[i] = a-&gt;data[i] + alpha * b-&gt;data[i];
+    }
+}</code></pre>
+                <p>
+                    The first thing that Intel intrinsics provide is the <code>__m512</code> type, which represents a 512-bit vector of 16 floats. There are separate types for
+                    other elements: <code>__m512d</code> for 8 doubles and <code>__m512i</code> for integers. The type is also embedded in the function names: as you can see, all the
+                    intrinsics used in this snippet follow the pattern <code>_mm512_*_ps</code>, where the first part indicates 512-bit vectors and the last embeds the type information.
+                    <code>ps</code> stands for "packed single precision", which means that we are treating
+                    these vectors as 16 floats. The middle part then tells what the function is actually doing, in this snippet:
+                </p>
+                <ul>
+                    <li><code>set1</code> creates a vector where all the elements are the same, which I'm using to multiply the <code>b</code> vector by the <code>alpha</code> scalar
+                    <li><code>loadu</code> which given a pointer loads the next 512 bits, the "u" stands for unaligned, there's the <code>load</code> variant which requires the pointer
+                    to be 64-byte aligned, but can segfault on unaligned loads
+                    <li><code>mul</code> which performs the element-wise multiplication
+                    <li><code>add</code> which performs the element-wise addition
+                    <li><code>storeu</code> which stores a vector to a pointer, similar to the load there's an aligned-only variant called <code>store</code>
+                </ul>
+                <p>
+                    There are more advanced features that I didn't cover, one for example being masking. It happens often that the number of elements we are processing isn't a multiple
+                    of 16, which means that we have to have a remainder scalar loop to finish the computation. However there are masked intrinsic variants which also receive a
+                    boolean mask, and perform the computation only where the mask is true, so we can use those for the remainder loop in the previous snippet:
+                </p>
+                <pre><code class="language-c">    __mmask16 mask = 0xFFFF &gt;&gt; (16 - (a-&gt;data_len - i)); // boolean mask keeping only valid elements
+    __m512 bv = _mm512_maskz_loadu_ps(mask, &amp;b-&gt;data[i]); // perform a masked load, where masked elements are set to zero
+    __m512 av = _mm512_maskz_loadu_ps(mask, &amp;a-&gt;data[i]);
+    // mul and adds are the same
+    bv = _mm512_mul_ps(bv, alpha_v);
+    __m512 res_v = _mm512_add_ps(av, bv);
+    // the store will be masked but not with maskz, as we don't want out-of-bounds writes
+    _mm512_mask_storeu_ps(&amp;result-&gt;data[i], mask, res_v);</code></pre>
+                <p>
+                    If you are interested in going deeper in CPU SIMD kernels, I suggest checking out <a href="https://salykova.github.io/gemm-cpu">this article</a> which
+                    goes deeper into matmul optimization for CPUs, which also helped me write the matmul kernel for gradino.
+                </p>
+
+                <h2>Arena allocators</h2>
+                <p>
+                    Arena allocators are a special kind of memory allocators where the allocator reserves for itself a big buffer and has a pointer which, before allocating anything,
+                    points at the start of the buffer. Then when we request N bytes, the allocator returns the pointer and then increments it by N (or more to keep alignment), such
+                    that the next allocation will be right after the current allocation. If the allocation exceeds the buffer capacity, then we have to allocate additional space.
+                    To free memory we simply set the pointer back to the start of the buffer, freeing everything;
+                    this is a peculiarity of simpler arenas, where we cannot free individual allocations but only everything at once. The arena's buffer however is usually freed only when the arena is
+                    destroyed, as there's a good chance that we will allocate again. For a deeper look at arenas I would suggest watching <a href="https://www.youtube.com/watch?v=jgiMagdjA1s">this
+                    video</a>, from which I also took the implementation.<br>
+                    The main advantage of arenas is that allocating and deallocating becomes basically free performance-wise, as we are simply incrementing or resetting a pointer (GLIBC's malloc
+                    is basically an incredibly complex arena where we also have to walk various linked lists, making everything much slower than simply incrementing a pointer). The main drawback is in
+                    usability, as we cannot easily free individual allocations, which is why when using arenas we usually have to think in terms of lifetimes: variables with similar lifetimes (i.e. which are
+                    allocated and deallocated at similar times) are grouped in a single arena, then we have an arena for each possible lifetime. This idea was popularized in game development (I think) as
+                    it's pretty easy to find the possible lifetimes, they can be the individual frame, the current level, the application or whatever. However this also works perfectly for training code!
+                    If you think about it, there are two types of allocations in training code:
+                </p>
+                <ul>
+                    <li> Permanent allocations, such as the model parameters and the dataset, which have the application as their lifetime, so we can have an arena for those which is freed only once at the end
+                    <li> Per-forward pass allocations, such as activations and gradients, which have the single forward+backward pass as lifetime, so we can have an arena for those which gets freed after every
+                    backward pass and then gets de-initialized only after training is done, which also means that we pay the price of the arena's buffer allocation only at the first batch, as activations' allocations
+                    are very predictable 
+                </ul>
+                <p>
+                    Because of the incredible amount of allocations needed, instead of passing the arena to every possible point of allocations (Zig's style), I opted to have a global active arena
+                    in the backend which I can then switch when needed.
+                </p>
+                <pre><code class="language-c">    arena_allocator* permanent_arena = arena_create(GiB(1), MiB(1), 8); // we create the permanent arena and set it as active
+    gradt_set_arena(permanent_arena);
+    // we initialize the model and the dataset, which will be implicitly allocated on permanent_arena
+    arena_allocator* epoch_arena = arena_create(GiB(1), MiB(1), 8); // this is the arena used for the training activations and gradients
+    gradt_set_arena(epoch_arena);
+    for (u32 i = 0; i &lt; EPOCHS; i++) {
+        for (u32 j = 0; j &lt; train_batches_size; j++) {
+            GradTensor* pred = model_forward(&amp;m, train_batches[j]);
+            GradTensor* loss = nn_cross_entropy_loss(pred, train_labels[j]);
+            gradt_backward(loss, optim_adamw, &amp;adamw_conf);
+            optim_adamw_step(&amp;adamw_conf);
+            arena_free(epoch_arena); // after each batch we free the arena, as we don't need the activations anymore
+        }
+    }
+    // after training and testing, we can destroy both arenas to actually free the memory
+    arena_destroy(epoch_arena);
+    arena_destroy(permanent_arena);</code></pre>
+            <p>
+                I also personally think that arenas make code much more readable! By grouping up all deallocations into a single call, it means that not only you don't have to
+                have a free for each malloc, but also you don't have to track all of the individual allocations which happen inside called functions and return the pointers to let
+                the caller free them, this comes in extremely handy for complex layer forward passes, like the <a href="https://github.com/SamueleTondelli/gradino/blob/a35932a6f088dcd7caeac50600b5feae82a97100/src/nn.c#L59">LSTM</a>:
+            </p>
+            <pre><code class="language-c">GradTensor* nn_lstm_forward(LSTM* lstm, GradTensor* in) {
+    // in shape (1, Step, Batch, Feat)
+    u32 n_step = in-&gt;tens-&gt;shape[1];
+    // steps Step * (Batch, Feat)
+    GradTensor** steps = gradt_create_split_views(in, 1);
+    u32 hidden_shape[4] = {1, 1, in-&gt;tens-&gt;shape[2], lstm-&gt;hidden_size};
+    arena_allocator* arena = _gradt_get_arena();
+    lstm-&gt;hidden_states = arena_alloc(arena, sizeof(GradTensor*), n_step);
+    lstm-&gt;cec_states = arena_alloc(arena, sizeof(GradTensor*), n_step);
+    GradTensor* hs = gradt_create(hidden_shape, 4);
+    tensor_set(hs-&gt;tens, 0.0);
+    GradTensor* cec = gradt_create(hidden_shape, 4);
+    tensor_set(cec-&gt;tens, 0.0);
+    for (u32 i = 0; i &lt; n_step; i++) {
+        GradTensor* in_hs = gradt_concat(steps[i], hs, 3);
+        GradTensor* f_t = nn_linear_forward(&amp;lstm-&gt;for_gate, in_hs);
+        f_t = nn_sigmoid(f_t);
+        cec = gradt_mul_elemwise(cec, f_t);
+        GradTensor* i_t = nn_linear_forward(&amp;lstm-&gt;in_gate, in_hs);
+        i_t = nn_sigmoid(i_t);
+        GradTensor* i_val_t = nn_linear_forward(&amp;lstm-&gt;in_val, in_hs);
+        i_val_t = nn_tanh(i_val_t);
+        GradTensor* cec_update = gradt_mul_elemwise(i_val_t, i_t);
+        cec = gradt_add(cec, cec_update);
+        GradTensor* o_t = nn_linear_forward(&amp;lstm-&gt;out_gate, in_hs);
+        o_t = nn_sigmoid(o_t);
+        GradTensor* new_hs = nn_tanh(cec);
+        hs = gradt_mul_elemwise(new_hs, o_t);
+        lstm-&gt;hidden_states[i] = hs;
+        lstm-&gt;cec_states[i] = cec;
+    }
+    return hs;
+}</code></pre>
+<p>
+    which otherwise would need to keep track of every single allocated tensor, just to call free on them after the function is called, as we need those for the backward pass and
+    the optimizer step.
+</p>
+            </div>
+        </article>
+    </main>
+</body>
+</html>

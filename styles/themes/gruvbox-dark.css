@@ -8,6 +8,18 @@
     --accent: #89b482;
     --accent-hover: #a9b665;
     --heading-accent: #d8a657;
+    --code-background: #32302f;
+    --code-border: #504945;
+    --code-text: #ddc7a1;
+    --syntax-comment: #928374;
+    --syntax-keyword: #d3869b;
+    --syntax-type: #d8a657;
+    --syntax-function: #a9b665;
+    --syntax-string: #a9b665;
+    --syntax-number: #e78a4e;
+    --syntax-variable: #7daea3;
+    --syntax-meta: #a89984;
+    --syntax-error: #ea6962;
     --selection-background: #45403d;
     --selection-text: #ddc7a1;
 }
