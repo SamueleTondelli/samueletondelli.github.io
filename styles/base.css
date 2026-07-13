@@ -111,6 +111,105 @@ a:focus-visible {
     padding-top: 32px;
 }
 
+.section--divided + .section--divided {
+    margin-top: 48px;
+}
+
+.experience-list {
+    display: grid;
+    gap: 14px;
+}
+
+.experience-card {
+    border: 1px solid var(--line-soft);
+    border-radius: 2px;
+    transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.experience-card:hover,
+.experience-card:focus-within,
+.experience-card[open] {
+    border-color: var(--line);
+    background: var(--code-background);
+}
+
+.experience-summary {
+    position: relative;
+    display: block;
+    padding: 18px 20px 18px 48px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.experience-summary::-webkit-details-marker {
+    display: none;
+}
+
+.experience-summary::before {
+    content: ">";
+    position: absolute;
+    top: 19px;
+    left: 20px;
+    color: var(--accent);
+    font-size: 1.05rem;
+    line-height: 1;
+    transform-origin: center;
+    transition: transform 160ms ease;
+}
+
+.experience-card[open] .experience-summary::before {
+    transform: rotate(90deg);
+}
+
+.experience-summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.experience-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.experience-title {
+    color: var(--text);
+    font-size: 1.12rem;
+}
+
+.experience-duration {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.experience-description {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+}
+
+.experience-details {
+    margin: 0 20px;
+    padding: 14px 0 18px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.experience-details p,
+.experience-details ul {
+    margin: 0;
+    color: var(--muted);
+}
+
+.experience-details ul {
+    padding-left: 1.2rem;
+}
+
+.experience-details li + li {
+    margin-top: 6px;
+}
+
 .content-list {
     list-style: none;
     margin: 0;
@@ -288,5 +387,14 @@ a:focus-visible {
 
     .media--square {
         width: min(72vw, 260px);
+    }
+
+    .experience-heading {
+        display: block;
+    }
+
+    .experience-duration {
+        display: block;
+        margin-top: 2px;
     }
 }

@@ -14,7 +14,7 @@
             <div class="prose">
                 <h1 class="title title--page" id="page-title">Samuele Tondelli</h1>
                 <p>
-                    I'm a final-year Master's student in Computer Science and Engineering at Politecnico di Milano, with a focus on performance engineering for deep learning and systems programming. My work spans from designing a custom <a href="https://github.com/leonardobertolani/deepspaceexploration">hardware accelerator for autonomous deep-space satellites</a> to my current thesis, where I'm optimizing GPU inference of a graph transformer for protein docking. I'm actively looking for internships and research opportunities, feel free to reach out!
+                    I'm a final-year Master's student in Computer Science and Engineering at Politecnico di Milano, interested in making machine-learning systems faster through GPU performance engineering and low-level systems work. My current thesis focuses on optimizing GPU inference for a graph transformer used in protein docking. Previously, I designed a custom <a href="https://github.com/leonardobertolani/deepspaceexploration">FPGA accelerator for autonomous deep-space satellites</a> and developed embedded and telemetry software for Formula SAE. I'm looking for internships and research opportunities in ML systems, GPU computing, and performance engineering, feel free to reach out!
                 </p>
 
                 <nav class="link-list" aria-label="Contact links">
@@ -24,6 +24,86 @@
                     <a href="https://x.com/thonnoh" rel="me">X</a>
                     <a href="media/CV.pdf">CV</a>
                 </nav>
+            </div>
+        </section>
+
+        <section class="section section--divided" aria-labelledby="current-work-title">
+            <h2 class="title title--section" id="current-work-title">Current Work</h2>
+            <div class="experience-list">
+                <details class="experience-card">
+                    <summary class="experience-summary">
+                        <span class="experience-heading">
+                            <span class="experience-title">Master's Thesis: GPU Inference for Protein Docking</span>
+                            <span class="experience-duration"></span>
+                        </span>
+                        <span class="experience-description">Optimizing the inference of a graph transformer used for protein docking.</span>
+                    </summary>
+                    <div class="experience-details">
+                        <p>
+                            My thesis at Politecnico di Milano explores how to reduce the inference latency of a <a href="https://pubs.acs.org/doi/abs/10.1021/acs.jmedchem.2c00991">graph transformer for protein docking</a> through GPU-focused performance engineering, as currently 
+                            graph operations are implemented via Python only libraries making inference hard to scale to real-life workloads.
+                        </p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section section--divided" aria-labelledby="experiences-title">
+            <h2 class="title title--section" id="experiences-title">Experiences</h2>
+            <div class="experience-list">
+                <details class="experience-card">
+                    <summary class="experience-summary">
+                        <span class="experience-heading">
+                            <span class="experience-title">Student Researcher | Genomic ML</span>
+                            <span class="experience-duration">September 2025 - February 2026</span>
+                        </span>
+                        <span class="experience-description">Researching ML approaches for genomic variant classification at NECSTLab, Politecnico di Milano.</span>
+                    </summary>
+                    <div class="experience-details">
+                        <ul>
+                            <li>Conducted a survey study on ML approaches for single nucleotide variant classification.</li>
+                            <li>Benchmarked four models across 144 genomic datasets: MLP, XGBoost, logistic regression, and random forest.</li>
+                            <li>Reduced training resource usage by up to 10&times; while minimally impacting test performance.</li>
+                            <li>Analyzed pathogenicity prediction for variants of uncertain significance, achieving 90% consistency across 72 models.</li>
+                            <li>Research paper accepted at <a href="https://embc.embs.org/2026/">IEEE EMBC 2026</a>.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="experience-card">
+                    <summary class="experience-summary">
+                        <span class="experience-heading">
+                            <span class="experience-title">Student Researcher | FPGA Deep Space</span>
+                            <span class="experience-duration">March 2025 - September 2025</span>
+                        </span>
+                        <span class="experience-description">Accelerated autonomous deep-space satellite navigation at NECSTLab, Politecnico di Milano.</span>
+                    </summary>
+                    <div class="experience-details">
+                        <ul>
+                            <li>Accelerated the ECOS library for autonomous navigation of deep-space satellites.</li>
+                            <li>Developed accelerators for sparse matrix computations, including SpMV and LDL<sup>T</sup> kernels, using Vitis HLS and Vivado.</li>
+                            <li>Deployed the IP on a Kria KD240 and developed a C Linux driver, achieving a 2&times; speedup over software.</li>
+                            <li>Competed in the 2025 AMD Open Hardware competition.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="experience-card">
+                    <summary class="experience-summary">
+                        <span class="experience-heading">
+                            <span class="experience-title">Software Engineer Intern | Formula SAE</span>
+                            <span class="experience-duration">March 2023 - May 2024</span>
+                        </span>
+                        <span class="experience-description">Developed embedded and telemetry software at More Modena Racing, University of Modena and Reggio Emilia.</span>
+                    </summary>
+                    <div class="experience-details">
+                        <ul>
+                            <li>Co-led a team of four developing software for combustion and hybrid Formula SAE cars.</li>
+                            <li>Developed live wireless telemetry at 1 Mbps over 500 m using a Raspberry Pi 5 and Grafana.</li>
+                            <li>Developed car dashboard software on an STM32 controller that reads CAN bus data.</li>
+                        </ul>
+                    </div>
+                </details>
             </div>
         </section>
 
