@@ -36,12 +36,13 @@
                             <span class="experience-title">Master's Thesis: GPU Inference for Protein Docking</span>
                             <span class="experience-duration"></span>
                         </span>
-                        <span class="experience-description">Optimizing the inference of a graph transformer used for protein docking.</span>
+                        <span class="experience-description">I'm working on making graph transformer inference for protein docking faster on GPUs.</span>
                     </summary>
                     <div class="experience-details">
                         <p>
-                            My thesis at Politecnico di Milano explores how to reduce the inference latency of a <a href="https://pubs.acs.org/doi/abs/10.1021/acs.jmedchem.2c00991">graph transformer for protein docking</a> through GPU-focused performance engineering, as currently 
-                            graph operations are implemented via Python only libraries making inference hard to scale to real-life workloads.
+                            For my thesis at Politecnico di Milano I'm optimizing a <a href="https://pubs.acs.org/doi/abs/10.1021/acs.jmedchem.2c00991">graph transformer for protein docking</a>, with LibTorch C++ and TensorRT backends running on an NVIDIA A100.
+                            Profiling with Nsight Systems showed that host-device synchronization was a bottleneck, which I removed to bring the forward pass from 63 ms to 12 ms.
+                            I also fused the full graph attention in Triton using sparse CSC indices, reducing its latency from 190 &micro;s to 46 &micro;s compared to PyTorch. This is still in active development!
                         </p>
                     </div>
                 </details>
@@ -54,19 +55,18 @@
                 <details class="experience-card">
                     <summary class="experience-summary">
                         <span class="experience-heading">
-                            <span class="experience-title">Student Researcher | Genomic ML | Published paper at <a href="https://embc.embs.org/2026/">IEEE EMBC 2026</a> (Paper No. 3391)</span>
+                            <span class="experience-title">Student Researcher | Genomic ML | Paper accepted at <a href="https://embc.embs.org/2026/">IEEE EMBC 2026</a> (Paper No. 3391)</span>
                             <span class="experience-duration">Sep 2025 - Feb 2026</span>
                         </span>
-                        <span class="experience-description">Researched ML approaches for genomic variant classification at NECSTLab, Politecnico di Milano.</span>
+                        <span class="experience-description">I compared machine learning approaches for genomic variant classification at NECSTLab, Politecnico di Milano.</span>
                     </summary>
                     <div class="experience-details">
-                        <ul>
-                            <li>Conducted a survey study on ML approaches for single nucleotide variant classification.</li>
-                            <li>Benchmarked four models across 144 genomic datasets: MLP, XGBoost, logistic regression, and random forest.</li>
-                            <li>Reduced training resource usage by up to 10&times; while minimally impacting test performance.</li>
-                            <li>Analyzed pathogenicity prediction for variants of uncertain significance, achieving 90% consistency across 72 models.</li>
-                            <li>Research paper accepted at <a href="https://embc.embs.org/2026/">IEEE EMBC 2026</a>.</li>
-                        </ul>
+                        <p>
+                            At NECSTLab I benchmarked MLPs, XGBoost, logistic regression and random forests across 144 genomic datasets to compare how they classify single nucleotide variants.
+                            I also reduced training time from 24 s to 2.6 s and peak RAM from 2.28 GB to 0.30 GB, with minimal impact on test performance.
+                            For variants of uncertain significance, 72 models trained without those variants showed 90% average pairwise agreement on pathogenicity predictions.
+                            This work led to a paper accepted at <a href="https://embc.embs.org/2026/">IEEE EMBC 2026</a>.
+                        </p>
                     </div>
                 </details>
 
@@ -76,15 +76,14 @@
                             <span class="experience-title">Student Researcher | FPGA Deep Space</span>
                             <span class="experience-duration">Mar 2025 - Sep 2025</span>
                         </span>
-                        <span class="experience-description">Accelerated autonomous deep-space satellite navigation at NECSTLab, Politecnico di Milano.</span>
+                        <span class="experience-description">I worked on an FPGA accelerator for autonomous deep-space satellite navigation at NECSTLab, Politecnico di Milano.</span>
                     </summary>
                     <div class="experience-details">
-                        <ul>
-                            <li>Accelerated the ECOS library for autonomous navigation of deep-space satellites.</li>
-                            <li>Developed accelerators for sparse matrix computations, including SpMV and LDL<sup>T</sup> kernels, using Vitis HLS and Vivado.</li>
-                            <li>Deployed the IP on a Kria KD240 and developed a C Linux driver, achieving a 2&times; speedup over software.</li>
-                            <li>Competed in the 2025 AMD Open Hardware competition.</li>
-                        </ul>
+                        <p>
+                            At NECSTLab I worked on accelerating ECOS, a library used for autonomous navigation of deep-space satellites.
+                            I focused on the sparse matrix computations, building SpMV and LDL<sup>T</sup> kernels with Vitis HLS and Vivado, then deploying them on a Kria KD240 with a Linux driver written in C.
+                            The accelerator achieved a 2&times; speedup over software, and we entered the project in the 2025 AMD Open Hardware competition.
+                        </p>
                     </div>
                 </details>
 
@@ -94,14 +93,14 @@
                             <span class="experience-title">Software Engineer Intern | Formula SAE</span>
                             <span class="experience-duration">Mar 2023 - May 2024</span>
                         </span>
-                        <span class="experience-description">Developed embedded and telemetry software at More Modena Racing, University of Modena and Reggio Emilia.</span>
+                        <span class="experience-description">I worked on embedded software and live telemetry for Formula SAE cars at More Modena Racing, University of Modena and Reggio Emilia.</span>
                     </summary>
                     <div class="experience-details">
-                        <ul>
-                            <li>Co-led a team of four developing software for combustion and hybrid Formula SAE cars.</li>
-                            <li>Developed live wireless telemetry at 1 Mbps over 500 m using a Raspberry Pi 5 and Grafana.</li>
-                            <li>Developed car dashboard software on an STM32 controller that reads CAN bus data.</li>
-                        </ul>
+                        <p>
+                            At More Modena Racing I co-led a team of four working on software for combustion and hybrid Formula SAE cars.
+                            I built a wireless telemetry system using a Raspberry Pi 5 and Grafana, which let us monitor the car live at 1 Mbps over 500 m.
+                            I also wrote the dashboard software on an STM32 controller, reading data from the car's CAN bus.
+                        </p>
                     </div>
                 </details>
             </div>
